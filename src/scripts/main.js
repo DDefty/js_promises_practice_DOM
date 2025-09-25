@@ -1,21 +1,43 @@
 'use strict';
 
-function showMessage(text) {
-  const msgDiv = document.createElement('div');
+function getNotificationEl() {
+  const els = document.querySelectorAll('[data-qa="notification"]');
 
-  msgDiv.setAttribute('data-qa', 'notification');
-  msgDiv.classList.add('success');
-  msgDiv.textContent = text;
-  document.body.appendChild(msgDiv);
+  if (els.length > 1) {
+    els.forEach((element, i) => {
+      if (i > 0) {
+        element.remove();
+      }
+    });
+  }
+
+  let el = els[0];
+
+  if (!el) {
+    el = document.createElement('div');
+    el.setAttribute('data-qa', 'notification');
+    document.body.appendChild(el);
+  }
+
+  return el;
+}
+
+function setNotification(text, type) {
+  const el = getNotificationEl();
+
+  el.textContent = text;
+  el.classList.remove('success', 'error');
+  el.classList.add(type);
+}
+
+function showMessage(text) {
+  setNotification(text, 'success');
 }
 
 function showError(error) {
-  const msgDiv = document.createElement('div');
+  const msg = error instanceof Error ? error.message : String(error);
 
-  msgDiv.setAttribute('data-qa', 'notification');
-  msgDiv.classList.add('error');
-  msgDiv.textContent = error instanceof Error ? error.message : String(error);
-  document.body.appendChild(msgDiv);
+  setNotification(msg, 'error');
 }
 
 const firstPromise = new Promise((resolve, reject) => {
