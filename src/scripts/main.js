@@ -19,45 +19,60 @@ function showError(error) {
 }
 
 const firstPromise = new Promise((resolve, reject) => {
-  const timeoutId = setTimeout(() => {
-    reject(new Error('First promise was rejected in 3 seconds if not clicked'));
-  }, 3000);
-
-  document.addEventListener(
-    'click',
-    () => {
+  const onClick = (e) => {
+    if (e.button === 0) {
       clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', onClick);
       resolve('First promise was resolved');
-    },
-    { once: true },
-  );
+    }
+  };
+
+  document.addEventListener('mousedown', onClick);
+
+  const timeoutId = setTimeout(() => {
+    document.removeEventListener('mousedown', onClick);
+    reject(new Error('First promise was rejected'));
+  }, 3000);
 });
 
 const secondPromise = new Promise((resolve) => {
-  const finish = () => {
-    resolve('Second promise was resolved');
-    document.removeEventListener('click', onLeft);
-    document.removeEventListener('contextmenu', onRight);
+  const onMouseDown = (e) => {
+    if (e.button === 0 || e.button === 2) {
+      document.removeEventListener('mousedown', onMouseDown);
+      resolve('Second promise was resolved');
+    }
   };
 
-  const onLeft = () => finish();
-  const onRight = () => finish();
-
-  document.addEventListener('click', onLeft, { once: true });
-  document.addEventListener('contextmenu', onRight, { once: true });
+  document.addEventListener('mousedown', onMouseDown);
 });
 
-const leftClickPromise = new Promise((resolve) => {
-  document.addEventListener('click', () => resolve(), { once: true });
-});
+const thirdPromise = new Promise((resolve) => {
+  let leftSeen = false;
+  let rightSeen = false;
+  let done = false;
 
-const rightClickPromise = new Promise((resolve) => {
-  document.addEventListener('contextmenu', () => resolve(), { once: true });
-});
+  const onMouseDown = (e) => {
+    if (done) {
+      return;
+    }
 
-const thirdPromise = Promise.all([leftClickPromise, rightClickPromise]).then(
-  () => 'Third promise was resolved',
-);
+    if (e.button === 0) {
+      leftSeen = true;
+    }
+
+    if (e.button === 2) {
+      rightSeen = true;
+    }
+
+    if (leftSeen && rightSeen) {
+      done = true;
+      document.removeEventListener('mousedown', onMouseDown);
+      resolve('Third promise was resolved');
+    }
+  };
+
+  document.addEventListener('mousedown', onMouseDown);
+});
 
 firstPromise.then(showMessage).catch(showError);
 secondPromise.then(showMessage).catch(showError);
